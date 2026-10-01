@@ -195,13 +195,13 @@ fun DocumentViewerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .background(Color(0xFF1E293B)),
+                        .background(Color(0xFFEFEBFF)),
                     contentAlignment = Alignment.Center
                 ) {
                     when {
                         isPdf -> {
                             if (isLoadingPage) {
-                                CircularProgressIndicator(color = Color.White)
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             } else if (currentPdfBitmap != null) {
                                 Image(
                                     bitmap = currentPdfBitmap!!.asImageBitmap(),
@@ -215,7 +215,7 @@ fun DocumentViewerScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "Could not render PDF preview",
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -242,7 +242,7 @@ fun DocumentViewerScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "File format: ${doc.fileType}",
-                                    color = Color.White
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(onClick = { FileManager.openFileWithExternalApp(context, doc) }) {
