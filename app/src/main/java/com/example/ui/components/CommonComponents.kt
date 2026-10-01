@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.Ink
+import com.example.ui.theme.Brand
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -62,9 +64,9 @@ fun SubjectBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color(0x1FFFFFFF),
+        color = Color(colorHex).copy(alpha = 0.16f),
         shape = RoundedCornerShape(10.dp),
-        modifier = modifier.border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(10.dp))
+        modifier = modifier.border(0.8.dp, Color(colorHex).copy(alpha = 0.40f), RoundedCornerShape(10.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -74,13 +76,13 @@ fun SubjectBadge(
                 modifier = Modifier
                     .size(7.dp)
                     .clip(CircleShape)
-                    .background(PureWhite)
+                    .background(Color(colorHex))
             )
             Spacer(modifier = Modifier.width(6.dp))
             val text = if (code.isNotBlank()) "$code • $name" else name
             Text(
                 text = text,
-                color = PureWhite,
+                color = Ink,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -97,9 +99,9 @@ fun ModuleBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color(0x14FFFFFF),
+        color = Color(0x1F6C5CE7),
         shape = RoundedCornerShape(10.dp),
-        modifier = modifier.border(0.5.dp, Color(0x1FFFFFFF), RoundedCornerShape(10.dp))
+        modifier = modifier.border(0.8.dp, Color(0x446C5CE7), RoundedCornerShape(10.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -189,17 +191,17 @@ fun EmptyStateView(
     ) {
         Surface(
             shape = CircleShape,
-            color = Color(0x26FFFFFF),
+            color = Color(0xCCFFFFFF),
             modifier = Modifier
-                .size(72.dp)
-                .border(1.dp, Color(0x33FFFFFF), CircleShape)
+                .size(84.dp)
+                .border(2.dp, Color(0x556C5CE7), CircleShape)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = PureWhite,
-                    modifier = Modifier.size(32.dp)
+                    tint = Brand,
+                    modifier = Modifier.size(38.dp)
                 )
             }
         }
@@ -208,7 +210,7 @@ fun EmptyStateView(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = PureWhite,
+            color = Ink,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -223,15 +225,15 @@ fun EmptyStateView(
             Button(
                 onClick = onActionClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PureWhite,
-                    contentColor = PureBlack
+                    containerColor = Brand,
+                    contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = actionButtonLabel,
                     fontWeight = FontWeight.Bold,
-                    color = PureBlack
+                    color = Color.White
                 )
             }
         }
