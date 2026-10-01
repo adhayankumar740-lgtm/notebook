@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -125,22 +126,22 @@ fun MainAppScreen(
             containerColor = Color.Transparent,
             topBar = {
                 Surface(
-                    color = com.example.ui.theme.GlassSmokedBlack,
+                    color = com.example.ui.theme.GlassWhite,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(0.5.dp, Color(0x1FFFFFFF), RoundedCornerShape(0.dp))
+                        .border(0.5.dp, com.example.ui.theme.GlassStroke, RoundedCornerShape(0.dp))
                 ) {
                     TopAppBar(
                         title = {
                             Text(
                                 text = when (currentTab) {
-                                    MainTab.EXPLORER -> "DocVault • Folders"
-                                    MainTab.ALL_DOCS -> "DocVault • All Documents"
-                                    MainTab.SEARCH -> "Offline Advanced Search"
+                                    MainTab.EXPLORER -> "📁 My Folders"
+                                    MainTab.ALL_DOCS -> "📚 All Documents"
+                                    MainTab.SEARCH -> "🔍 Smart Search"
                                 },
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = com.example.ui.theme.PureWhite
+                                color = com.example.ui.theme.Ink
                             )
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -153,7 +154,7 @@ fun MainAppScreen(
                 val navBarShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
                 Surface(
                     shape = navBarShape,
-                    color = com.example.ui.theme.GlassSmokedBlack,
+                    color = com.example.ui.theme.GlassWhite,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(navBarShape)
@@ -161,8 +162,8 @@ fun MainAppScreen(
                             width = 1.dp,
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    Color(0x33FFFFFF),
-                                    Color(0x0AFFFFFF)
+                                    com.example.ui.theme.GlassStroke,
+                                    com.example.ui.theme.GlassStrokeSoft
                                 )
                             ),
                             shape = navBarShape
@@ -183,11 +184,11 @@ fun MainAppScreen(
                             },
                             label = { Text("Folders") },
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.PureWhite,
-                                selectedIconColor = com.example.ui.theme.PureBlack,
-                                unselectedIconColor = Color(0xB3FFFFFF),
-                                selectedTextColor = com.example.ui.theme.PureWhite,
-                                unselectedTextColor = com.example.ui.theme.Silver
+                                indicatorColor = com.example.ui.theme.BrandSoft,
+                                selectedIconColor = com.example.ui.theme.Brand,
+                                unselectedIconColor = com.example.ui.theme.InkSoft,
+                                selectedTextColor = com.example.ui.theme.Brand,
+                                unselectedTextColor = com.example.ui.theme.InkSoft
                             ),
                             modifier = Modifier.testTag("tab_explorer")
                         )
@@ -203,11 +204,11 @@ fun MainAppScreen(
                             },
                             label = { Text("All Docs") },
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.PureWhite,
-                                selectedIconColor = com.example.ui.theme.PureBlack,
-                                unselectedIconColor = Color(0xB3FFFFFF),
-                                selectedTextColor = com.example.ui.theme.PureWhite,
-                                unselectedTextColor = com.example.ui.theme.Silver
+                                indicatorColor = com.example.ui.theme.BrandSoft,
+                                selectedIconColor = com.example.ui.theme.Brand,
+                                unselectedIconColor = com.example.ui.theme.InkSoft,
+                                selectedTextColor = com.example.ui.theme.Brand,
+                                unselectedTextColor = com.example.ui.theme.InkSoft
                             ),
                             modifier = Modifier.testTag("tab_all_docs")
                         )
@@ -223,11 +224,11 @@ fun MainAppScreen(
                             },
                             label = { Text("Search") },
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.PureWhite,
-                                selectedIconColor = com.example.ui.theme.PureBlack,
-                                unselectedIconColor = Color(0xB3FFFFFF),
-                                selectedTextColor = com.example.ui.theme.PureWhite,
-                                unselectedTextColor = com.example.ui.theme.Silver
+                                indicatorColor = com.example.ui.theme.BrandSoft,
+                                selectedIconColor = com.example.ui.theme.Brand,
+                                unselectedIconColor = com.example.ui.theme.InkSoft,
+                                selectedTextColor = com.example.ui.theme.Brand,
+                                unselectedTextColor = com.example.ui.theme.InkSoft
                             ),
                             modifier = Modifier.testTag("tab_search")
                         )
@@ -235,19 +236,21 @@ fun MainAppScreen(
                 }
             },
             floatingActionButton = {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = { viewModel.openAddDocument() },
-                    containerColor = com.example.ui.theme.PureWhite,
-                    contentColor = com.example.ui.theme.PureBlack,
-                    shape = RoundedCornerShape(16.dp),
+                    containerColor = com.example.ui.theme.Brand,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(20.dp),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Import Document",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    text = { Text("Add File", fontWeight = FontWeight.Bold) },
                     modifier = Modifier.testTag("fab_add_document")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Import Document",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             modifier = Modifier.fillMaxSize()
