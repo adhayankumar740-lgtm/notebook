@@ -148,9 +148,8 @@ private fun BreadcrumbHeader(
     onNavigateRoot: () -> Unit,
     onNavigateSubject: () -> Unit
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     Surface(
-        color = if (isDark) Color(0x401E293B) else Color(0x99FFFFFF),
+        color = Color(0x99FFFFFF),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -234,22 +233,29 @@ private fun SubjectsOverviewView(
         item {
             // Hero card summarizing storage
             Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(Color(0xFF6C5CE7), Color(0xFF8B5CF6), Color(0xFFFF6FA5))
+                        ),
+                        RoundedCornerShape(26.dp)
+                    )
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "Subject & Module Organizer",
+                        text = "Hey Student! 👋",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Keep all your PDFs, lecture photos, and notes organized inside structured folders on phone storage.",
+                        text = "Your notes, PDFs & lecture photos — sab kuch ek jagah, subject-wise organized ✨",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                        color = Color.White.copy(alpha = 0.92f)
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(
@@ -274,7 +280,7 @@ private fun SubjectsOverviewView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Subjects Folders",
+                    text = "📚 My Subjects",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -323,13 +329,13 @@ private fun StatItem(count: String, label: String) {
         Text(
             text = count,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+            color = Color.White.copy(alpha = 0.85f)
         )
     }
 }
@@ -364,13 +370,17 @@ private fun SubjectFolderCard(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(color.copy(alpha = 0.15f)),
+                    .background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(color, color.copy(alpha = 0.55f))
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Folder,
                     contentDescription = null,
-                    tint = color,
+                    tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )
             }
