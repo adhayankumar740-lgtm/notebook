@@ -1,46 +1,48 @@
 package com.example.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// High-contrast Sleek Black & White Monochrome Palette
-private val BlackAndWhiteScheme = darkColorScheme(
-    primary = PureWhite,
-    onPrimary = PureBlack,
-    primaryContainer = Color(0xFF242426),
-    onPrimaryContainer = PureWhite,
+private val FreshLightScheme = lightColorScheme(
+    primary = Brand,
+    onPrimary = Color.White,
+    primaryContainer = BrandSoft,
+    onPrimaryContainer = Ink,
 
-    secondary = Platinum,
-    onSecondary = PureBlack,
-    secondaryContainer = Color(0xFF1C1C1E),
-    onSecondaryContainer = PureWhite,
+    secondary = BrandPink,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE3EE),
+    onSecondaryContainer = Ink,
 
-    tertiary = Silver,
-    onTertiary = PureBlack,
+    tertiary = Mint,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFD5F7F0),
+    onTertiaryContainer = Ink,
 
-    background = PureBlack,
-    onBackground = PureWhite,
+    background = BgLavender,
+    onBackground = Ink,
 
-    surface = Obsidian,
-    onSurface = PureWhite,
+    surface = Color.White,
+    onSurface = Ink,
+    surfaceVariant = Color(0xFFF1EEFF),
+    onSurfaceVariant = InkSoft,
 
-    surfaceVariant = DarkCharcoal,
-    onSurfaceVariant = Silver,
+    outline = Color(0xFFB9B4DB),
+    outlineVariant = Color(0x331E1B4B),
 
-    outline = CharcoalBorder,
-    outlineVariant = Color(0x33FFFFFF)
+    error = Coral
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = true, // Default to sleek black glass
-    dynamicColor: Boolean = false, // Keep pure black & white design
+    darkTheme: Boolean = false, // always light & fresh
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = BlackAndWhiteScheme,
+        colorScheme = FreshLightScheme,
         typography = Typography,
         content = content
     )
