@@ -189,7 +189,7 @@ fun AddDocumentSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xF70A0A0A)
+        containerColor = Color(0xF7FFFFFF)
     ) {
         Column(
             modifier = modifier
@@ -491,10 +491,10 @@ fun AddDocumentSheet(
                 },
                 enabled = canSave,
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = com.example.ui.theme.PureWhite,
-                    contentColor = com.example.ui.theme.PureBlack,
-                    disabledContainerColor = Color(0x26FFFFFF),
-                    disabledContentColor = Color(0x66FFFFFF)
+                    containerColor = com.example.ui.theme.Brand,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0x226C5CE7),
+                    disabledContentColor = Color(0x886C5CE7)
                 ),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -505,14 +505,14 @@ fun AddDocumentSheet(
                 Icon(
                     imageVector = Icons.Default.UploadFile,
                     contentDescription = null,
-                    tint = if (canSave) com.example.ui.theme.PureBlack else Color(0x66FFFFFF)
+                    tint = if (canSave) Color.White else Color(0x886C5CE7)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Save to Phone Storage",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (canSave) com.example.ui.theme.PureBlack else Color(0x66FFFFFF)
+                    color = if (canSave) Color.White else Color(0x886C5CE7)
                 )
             }
 
