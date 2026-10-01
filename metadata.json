@@ -1,0 +1,6 @@
+{
+  "name": "DocVault",
+  "description": "Organize PDFs, photos, and notes subject-wise and module-wise with lecture metadata and fast offline search.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
