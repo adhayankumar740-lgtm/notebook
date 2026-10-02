@@ -3,6 +3,15 @@ package com.example.ui.screens
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -117,7 +126,7 @@ fun DocumentViewerScreen(
         if (isPdf && file.exists()) {
             isLoadingPage = true
             withContext(Dispatchers.IO) {
-                val bmp = PdfHelper.renderPageToBitmap(file, currentPageIndex, maxDimension = 1400)
+                val bmp = PdfHelper.renderPageToBitmap(file, currentPageIndex, maxDimension = 2600)
                 withContext(Dispatchers.Main) {
                     currentPdfBitmap = bmp
                     isLoadingPage = false
@@ -195,27 +204,29 @@ fun DocumentViewerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .background(Color(0xFFEFEBFF)),
+                        .background(Color(0xFF1E293B)),
                     contentAlignment = Alignment.Center
                 ) {
                     when {
                         isPdf -> {
                             if (isLoadingPage) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                CircularProgressIndicator(color = Color.White)
                             } else if (currentPdfBitmap != null) {
-                                Image(
-                                    bitmap = currentPdfBitmap!!.asImageBitmap(),
-                                    contentDescription = "PDF Page ${currentPageIndex + 1}",
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(8.dp)
-                                )
+                                ZoomableBox(resetKey = currentPageIndex) {
+                                    Image(
+                                        bitmap = currentPdfBitmap!!.asImageBitmap(),
+                                        contentDescription = "PDF Page ${currentPageIndex + 1}",
+                                        contentScale = ContentScale.Fit,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(8.dp)
+                                    )
+                                }
                             } else {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "Could not render PDF preview",
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = Color.White,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -226,23 +237,25 @@ fun DocumentViewerScreen(
                             }
                         }
                         doc.fileType.equals("IMAGE", ignoreCase = true) -> {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(file)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Photo: ${doc.title}",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp)
-                            )
+                            ZoomableBox(resetKey = doc.id) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(file)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Photo: ${doc.title}",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(8.dp)
+                                )
+                            }
                         }
                         else -> {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "File format: ${doc.fileType}",
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color.White
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(onClick = { FileManager.openFileWithExternalApp(context, doc) }) {
@@ -490,5 +503,73 @@ private fun DetailRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+
+/**
+ * Pinch to zoom (1x - 6x), drag to pan when zoomed, double-tap to toggle zoom.
+ * Zoom resets whenever [resetKey] changes (e.g. next PDF page).
+ */
+@Composable
+private fun ZoomableBox(
+    resetKey: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var scale by remember(resetKey) { mutableFloatStateOf(1f) }
+    var offset by remember(resetKey) { mutableStateOf(Offset.Zero) }
+    var boxSize by remember { mutableStateOf(IntSize.Zero) }
+
+    fun clamp(o: Offset, s: Float): Offset {
+        val maxX = boxSize.width * (s - 1f) / 2f
+        val maxY = boxSize.height * (s - 1f) / 2f
+        return Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY))
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .onSizeChanged { boxSize = it }
+            .pointerInput(resetKey) {
+                detectTapGestures(
+                    onDoubleTap = { tap ->
+                        if (scale > 1.05f) {
+                            scale = 1f
+                            offset = Offset.Zero
+                        } else {
+                            val target = 2.5f
+                            val center = Offset(boxSize.width / 2f, boxSize.height / 2f)
+                            scale = target
+                            offset = clamp((tap - center) * (1f - target), target)
+                        }
+                    }
+                )
+            }
+            .pointerInput(resetKey) {
+                detectTransformGestures { centroid, pan, zoom, _ ->
+                    val newScale = (scale * zoom).coerceIn(1f, 6f)
+                    val center = Offset(boxSize.width / 2f, boxSize.height / 2f)
+                    val ratio = newScale / scale
+                    // keep the point under the fingers fixed while scaling, then apply pan
+                    val moved = (centroid - center) - ((centroid - center) - offset) * ratio + pan
+                    scale = newScale
+                    offset = if (newScale <= 1.001f) Offset.Zero else clamp(moved, newScale)
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
+                    translationY = offset.y
+                }
+        ) {
+            content()
+        }
     }
 }
