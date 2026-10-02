@@ -98,6 +98,8 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.coil.compose)
+  // On-device text recognition (reads PDFs / photos for the Summarize feature)
+  implementation("com.google.mlkit:text-recognition:16.0.1")
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
   // Uncomment to use Firestore:
