@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -321,24 +324,16 @@ private fun DocVaultHeader(
                         .clickable(onClick = onHome)
                         .testTag("app_logo")
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
+                    Image(
+                        painter = painterResource(id = R.drawable.visor_logo),
+                        contentDescription = "Visor logo",
                         modifier = Modifier
                             .size(32.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Violet)
-                    ) {
-                        Text(
-                            text = "D",
-                            color = OnInk,
-                            fontFamily = DisplayFont,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp
-                        )
-                    }
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "DocVault",
+                        text = "Visor",
                         color = Ink,
                         fontFamily = DisplayFont,
                         fontWeight = FontWeight.SemiBold,
