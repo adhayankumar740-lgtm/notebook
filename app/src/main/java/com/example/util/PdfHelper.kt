@@ -181,7 +181,7 @@ object PdfHelper {
             // Footer
             paint.color = Color.GRAY
             paint.textSize = 11f
-            canvas1.drawText("DocVault Study Organizer  •  Page 1 of 2", 210f, 810f, paint)
+            canvas1.drawText("Visor Study Organizer  •  Page 1 of 2", 210f, 810f, paint)
 
             document.finishPage(page1)
 
@@ -229,7 +229,7 @@ object PdfHelper {
             // Footer
             paint.color = Color.GRAY
             paint.textSize = 11f
-            canvas2.drawText("DocVault Study Organizer  •  Page 2 of 2", 210f, 810f, paint)
+            canvas2.drawText("Visor Study Organizer  •  Page 2 of 2", 210f, 810f, paint)
 
             document.finishPage(page2)
 
