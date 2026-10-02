@@ -47,9 +47,10 @@ import com.example.data.model.DocumentWithDetails
 import com.example.ui.components.DocumentCard
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.GlassFilterChip
-import com.example.ui.theme.AccentAmber
-import com.example.ui.theme.ImagePurple
-import com.example.ui.theme.PdfRed
+import com.example.ui.components.PageHeading
+import com.example.ui.theme.Coral
+import com.example.ui.theme.MutedFg
+import com.example.ui.theme.SkyBlue
 import com.example.ui.viewmodel.DocVaultViewModel
 import com.example.ui.viewmodel.SortOption
 import com.example.util.FileManager
@@ -69,69 +70,52 @@ fun DocumentsListView(
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Quick Filter Row
+        PageHeading(
+            title = if (starredOnly) "Starred" else "All Documents",
+            subtitle = "${documents.size} ${if (documents.size == 1) "document" else "documents"}"
+        )
+
+        // Type filter chips + sort (same as the web design)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            GlassFilterChip(
-                selected = fileTypeFilter == "ALL" && !starredOnly,
-                onClick = {
-                    viewModel.clearFileFormats()
-                    viewModel.setStarredOnly(false)
-                },
-                label = "All (${documents.size})"
-            )
-
-            GlassFilterChip(
-                selected = fileTypeFilter == "PDF",
-                onClick = {
-                    viewModel.toggleFileFormat("PDF")
-                },
-                icon = Icons.Default.Description,
-                activeColor = PdfRed,
-                label = "PDFs"
-            )
-
-            GlassFilterChip(
-                selected = fileTypeFilter == "IMAGE" || fileTypeFilter == "JPG",
-                onClick = {
-                    viewModel.toggleFileFormat("JPG")
-                },
-                icon = Icons.Default.Image,
-                activeColor = ImagePurple,
-                label = "Photos & JPG"
-            )
-
-            GlassFilterChip(
-                selected = starredOnly,
-                onClick = {
-                    viewModel.setStarredOnly(!starredOnly)
-                },
-                icon = Icons.Default.Star,
-                activeColor = AccentAmber,
-                label = "Starred"
-            )
-        }
-
-        // Subheader with Count & Sort
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "${documents.size} Documents",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                GlassFilterChip(
+                    selected = fileTypeFilter == "ALL",
+                    onClick = { viewModel.clearFileFormats() },
+                    label = "All"
+                )
+                GlassFilterChip(
+                    selected = fileTypeFilter == "PDF",
+                    onClick = {
+                        viewModel.clearFileFormats()
+                        viewModel.toggleFileFormat("PDF")
+                    },
+                    icon = Icons.Default.Description,
+                    activeColor = Coral,
+                    label = "PDF"
+                )
+                GlassFilterChip(
+                    selected = fileTypeFilter == "JPG" || fileTypeFilter == "IMAGE",
+                    onClick = {
+                        viewModel.clearFileFormats()
+                        viewModel.toggleFileFormat("JPG")
+                    },
+                    icon = Icons.Default.Image,
+                    activeColor = SkyBlue,
+                    label = "Images"
+                )
+            }
 
             Box {
                 Row(
@@ -142,15 +126,9 @@ fun DocumentsListView(
                         Icon(
                             imageVector = Icons.Default.Sort,
                             contentDescription = "Sort Options",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MutedFg
                         )
                     }
-                    Text(
-                        text = sortOption.displayName,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
                 }
 
                 DropdownMenu(
@@ -179,15 +157,15 @@ fun DocumentsListView(
             EmptyStateView(
                 icon = Icons.Default.Description,
                 title = "No documents found",
-                description = "No documents match the current filters. Import new PDF files or photos from your phone storage.",
-                actionButtonLabel = "Import Document",
+                description = "Try another filter or add a document to your library.",
+                actionButtonLabel = "Add document",
                 onActionClick = onOpenAddDocument
             )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(documents, key = { it.document.id }) { item ->
                     DocumentCard(
