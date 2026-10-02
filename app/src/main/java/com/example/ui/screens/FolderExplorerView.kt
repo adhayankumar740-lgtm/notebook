@@ -64,6 +64,13 @@ import com.example.ui.components.DocumentCard
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.GlassCard
 import com.example.ui.viewmodel.DocVaultViewModel
+import com.example.ui.theme.toneOf
+import com.example.ui.theme.DisplayFont
+import com.example.ui.theme.BorderColor
+import com.example.ui.theme.MutedFg
+import com.example.ui.theme.Ink
+import com.example.ui.theme.OnInk
+import com.example.ui.components.PageHeading
 import com.example.util.FileManager
 
 @Composable
@@ -149,7 +156,7 @@ private fun BreadcrumbHeader(
     onNavigateSubject: () -> Unit
 ) {
     Surface(
-        color = Color(0x99FFFFFF),
+        color = Color.Transparent,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -159,7 +166,7 @@ private fun BreadcrumbHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "All Subjects",
+                text = "Home",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (selectedSubject == null) FontWeight.Bold else FontWeight.Normal,
                 color = if (selectedSubject == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -231,46 +238,11 @@ private fun SubjectsOverviewView(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            // Hero card summarizing storage
-            Card(
-                shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            listOf(Color(0xFF6C5CE7), Color(0xFF8B5CF6), Color(0xFFFF6FA5))
-                        ),
-                        RoundedCornerShape(26.dp)
-                    )
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "Hey Student! 👋",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Your notes, PDFs & lecture photos — sab kuch ek jagah, subject-wise organized ✨",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.92f)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        StatItem(count = subjects.size.toString(), label = "Subjects")
-                        StatItem(count = modules.size.toString(), label = "Modules")
-                        StatItem(count = documents.size.toString(), label = "Documents")
-                        val pdfCount = documents.count { it.document.fileType == "PDF" }
-                        val imgCount = documents.count { it.document.fileType == "IMAGE" }
-                        StatItem(count = "${pdfCount}p / ${imgCount}img", label = "Files")
-                    }
-                }
-            }
+            PageHeading(
+                title = "Your library",
+                subtitle = "${subjects.size} subjects · ${documents.size} documents",
+                horizontalPadding = 0.dp
+            )
         }
 
         item {
@@ -280,13 +252,15 @@ private fun SubjectsOverviewView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "📚 My Subjects",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    text = "Subjects",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                FilledTonalButton(
+                OutlinedButton(
                     onClick = onAddSubject,
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = Ink),
                     modifier = Modifier.testTag("add_subject_button")
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -329,13 +303,13 @@ private fun StatItem(count: String, label: String) {
         Text(
             text = count,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.85f)
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
         )
     }
 }
@@ -349,14 +323,14 @@ private fun SubjectFolderCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val color = Color(subject.colorHex)
+    val color = toneOf(subject.colorHex)
     var menuExpanded by remember { mutableStateOf(false) }
 
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("subject_card_${subject.id}"),
-        cornerRadius = 18.dp,
+        cornerRadius = 12.dp,
         onClick = onClick
     ) {
         Row(
@@ -368,19 +342,15 @@ private fun SubjectFolderCard(
             // Folder Icon with Color
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            listOf(color, color.copy(alpha = 0.55f))
-                        )
-                    ),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Folder,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = color,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -407,7 +377,8 @@ private fun SubjectFolderCard(
                     Text(
                         text = subject.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -500,7 +471,7 @@ private fun SubjectModulesView(
     onDeleteModule: (Module) -> Unit,
     onAddDocument: () -> Unit
 ) {
-    val color = Color(subject.colorHex)
+    val color = toneOf(subject.colorHex)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -510,7 +481,7 @@ private fun SubjectModulesView(
         item {
             // Subject banner
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.10f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -746,7 +717,7 @@ private fun ModuleDocumentsView(
                     Text(
                         text = "${subject.name} • Module ${module.moduleNumber}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color(subject.colorHex),
+                        color = toneOf(subject.colorHex),
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
