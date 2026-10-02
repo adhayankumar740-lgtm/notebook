@@ -52,6 +52,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.DocumentWithDetails
 import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.Coral
+import com.example.ui.theme.SkyBlue
 import com.example.ui.viewmodel.DocVaultViewModel
 import com.example.util.FileManager
 import java.io.File
@@ -79,7 +81,7 @@ fun DocumentCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("document_card_${doc.id}"),
-        cornerRadius = 18.dp,
+        cornerRadius = 12.dp,
         onClick = onClick
     ) {
         Column(
@@ -96,7 +98,7 @@ fun DocumentCard(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                        .background((if (specificFormat == "PDF") Coral else SkyBlue).copy(alpha = 0.10f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (hasValidThumbnail) {
@@ -111,7 +113,7 @@ fun DocumentCard(
                         )
                     } else {
                         val icon = if (specificFormat == "PDF") Icons.Default.Description else Icons.Default.Image
-                        val tint = if (specificFormat == "PDF") Color(0xFFEF4444) else Color(0xFFA855F7)
+                        val tint = if (specificFormat == "PDF") Coral else SkyBlue
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
@@ -231,7 +233,7 @@ fun DocumentCard(
                     Text(
                         text = doc.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
