@@ -1,28 +1,30 @@
 package com.example.ui.screens
 
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -31,39 +33,41 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AddDocumentSheet
 import com.example.ui.components.AddEditModuleDialog
 import com.example.ui.components.AddEditSubjectDialog
 import com.example.ui.components.EditDocumentDetailsDialog
 import com.example.ui.components.GlassBackground
-import com.example.ui.theme.GlassBorderDark
-import com.example.ui.theme.GlassBorderLight
-import com.example.ui.theme.GlassDarkSurface
-import com.example.ui.theme.GlassLightSurface
+import com.example.ui.theme.BorderColor
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.DisplayFont
+import com.example.ui.theme.Ink
+import com.example.ui.theme.MutedFg
+import com.example.ui.theme.OnInk
+import com.example.ui.theme.Paper
+import com.example.ui.theme.Violet
 import com.example.ui.viewmodel.DocVaultViewModel
 import com.example.ui.viewmodel.MainTab
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreen(
     viewModel: DocVaultViewModel,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val selectedSubject by viewModel.selectedSubject.collectAsStateWithLifecycle()
     val selectedModule by viewModel.selectedModule.collectAsStateWithLifecycle()
@@ -121,136 +125,71 @@ fun MainAppScreen(
         return
     }
 
+    val onFolders = currentTab == MainTab.EXPLORER
+    val onAll = currentTab == MainTab.ALL_DOCS && !starredOnly
+    val onStarred = currentTab == MainTab.ALL_DOCS && starredOnly
+    val onSearch = currentTab == MainTab.SEARCH
+
     GlassBackground(modifier = modifier) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                Surface(
-                    color = com.example.ui.theme.GlassWhite,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(0.5.dp, com.example.ui.theme.GlassStroke, RoundedCornerShape(0.dp))
-                ) {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = when (currentTab) {
-                                    MainTab.EXPLORER -> "📁 My Folders"
-                                    MainTab.ALL_DOCS -> "📚 All Documents"
-                                    MainTab.SEARCH -> "🔍 Smart Search"
-                                },
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = com.example.ui.theme.Ink
-                            )
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent
-                        )
-                    )
-                }
+                DocVaultHeader(
+                    onHome = {
+                        viewModel.selectSubject(null)
+                        viewModel.setTab(MainTab.EXPLORER)
+                    },
+                    onAdd = { viewModel.openAddDocument() }
+                )
             },
             bottomBar = {
-                val navBarShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-                Surface(
-                    shape = navBarShape,
-                    color = com.example.ui.theme.GlassWhite,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(navBarShape)
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    com.example.ui.theme.GlassStroke,
-                                    com.example.ui.theme.GlassStrokeSoft
-                                )
-                            ),
-                            shape = navBarShape
-                        )
-                        .navigationBarsPadding()
+                NavigationBar(
+                    containerColor = CardSurface,
+                    tonalElevation = 0.dp
                 ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent
-                    ) {
-                        NavigationBarItem(
-                            selected = currentTab == MainTab.EXPLORER,
-                            onClick = { viewModel.setTab(MainTab.EXPLORER) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (currentTab == MainTab.EXPLORER) Icons.Filled.Folder else Icons.Outlined.Folder,
-                                    contentDescription = "Folders"
-                                )
-                            },
-                            label = { Text("Folders") },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.BrandSoft,
-                                selectedIconColor = com.example.ui.theme.Brand,
-                                unselectedIconColor = com.example.ui.theme.InkSoft,
-                                selectedTextColor = com.example.ui.theme.Brand,
-                                unselectedTextColor = com.example.ui.theme.InkSoft
-                            ),
-                            modifier = Modifier.testTag("tab_explorer")
-                        )
-
-                        NavigationBarItem(
-                            selected = currentTab == MainTab.ALL_DOCS,
-                            onClick = { viewModel.setTab(MainTab.ALL_DOCS) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (currentTab == MainTab.ALL_DOCS) Icons.Filled.Description else Icons.Outlined.Description,
-                                    contentDescription = "All Docs"
-                                )
-                            },
-                            label = { Text("All Docs") },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.BrandSoft,
-                                selectedIconColor = com.example.ui.theme.Brand,
-                                unselectedIconColor = com.example.ui.theme.InkSoft,
-                                selectedTextColor = com.example.ui.theme.Brand,
-                                unselectedTextColor = com.example.ui.theme.InkSoft
-                            ),
-                            modifier = Modifier.testTag("tab_all_docs")
-                        )
-
-                        NavigationBarItem(
-                            selected = currentTab == MainTab.SEARCH,
-                            onClick = { viewModel.setTab(MainTab.SEARCH) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (currentTab == MainTab.SEARCH) Icons.Filled.Search else Icons.Outlined.Search,
-                                    contentDescription = "Search"
-                                )
-                            },
-                            label = { Text("Search") },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = com.example.ui.theme.BrandSoft,
-                                selectedIconColor = com.example.ui.theme.Brand,
-                                unselectedIconColor = com.example.ui.theme.InkSoft,
-                                selectedTextColor = com.example.ui.theme.Brand,
-                                unselectedTextColor = com.example.ui.theme.InkSoft
-                            ),
-                            modifier = Modifier.testTag("tab_search")
-                        )
-                    }
+                    DocVaultNavItem(
+                        selected = onFolders,
+                        label = "Folders",
+                        selectedIcon = Icons.Filled.Folder,
+                        icon = Icons.Outlined.Folder,
+                        testTag = "tab_explorer",
+                        onClick = { viewModel.setTab(MainTab.EXPLORER) }
+                    )
+                    DocVaultNavItem(
+                        selected = onAll,
+                        label = "All",
+                        selectedIcon = Icons.Filled.Description,
+                        icon = Icons.Outlined.Description,
+                        testTag = "tab_all_docs",
+                        onClick = {
+                            viewModel.clearSearchFilters()
+                            viewModel.setTab(MainTab.ALL_DOCS)
+                        }
+                    )
+                    DocVaultNavItem(
+                        selected = onStarred,
+                        label = "Starred",
+                        selectedIcon = Icons.Filled.Star,
+                        icon = Icons.Outlined.StarBorder,
+                        testTag = "tab_starred",
+                        onClick = {
+                            viewModel.clearSearchFilters()
+                            viewModel.setStarredOnly(true)
+                            viewModel.setTab(MainTab.ALL_DOCS)
+                        }
+                    )
+                    DocVaultNavItem(
+                        selected = onSearch,
+                        label = "Search",
+                        selectedIcon = Icons.Filled.Search,
+                        icon = Icons.Outlined.Search,
+                        testTag = "tab_search",
+                        onClick = {
+                            if (starredOnly) viewModel.setStarredOnly(false)
+                            viewModel.setTab(MainTab.SEARCH)
+                        }
+                    )
                 }
-            },
-            floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = { viewModel.openAddDocument() },
-                    containerColor = com.example.ui.theme.Brand,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(20.dp),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Import Document",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    text = { Text("Add File", fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.testTag("fab_add_document")
-                )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             modifier = Modifier.fillMaxSize()
@@ -354,4 +293,124 @@ fun MainAppScreen(
             }
         )
     }
+}
+
+@Composable
+private fun DocVaultHeader(
+    onHome: () -> Unit,
+    onAdd: () -> Unit
+) {
+    Surface(
+        color = Paper,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.statusBarsPadding()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+            ) {
+                // Logo + wordmark
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onHome)
+                        .testTag("app_logo")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Violet)
+                    ) {
+                        Text(
+                            text = "D",
+                            color = OnInk,
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "DocVault",
+                        color = Ink,
+                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp
+                    )
+                }
+
+                // "Add" pill
+                Surface(
+                    color = Ink,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable(onClick = onAdd)
+                        .testTag("fab_add_document")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.NoteAdd,
+                            contentDescription = "Add document",
+                            tint = OnInk,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Add",
+                            color = OnInk,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(BorderColor)
+            )
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.DocVaultNavItem(
+    selected: Boolean,
+    label: String,
+    selectedIcon: ImageVector,
+    icon: ImageVector,
+    testTag: String,
+    onClick: () -> Unit
+) {
+    NavigationBarItem(
+        selected = selected,
+        onClick = onClick,
+        icon = {
+            Icon(
+                imageVector = if (selected) selectedIcon else icon,
+                contentDescription = label
+            )
+        },
+        label = { Text(label, fontSize = 11.sp) },
+        colors = NavigationBarItemDefaults.colors(
+            indicatorColor = Color.Transparent,
+            selectedIconColor = Violet,
+            selectedTextColor = Violet,
+            unselectedIconColor = MutedFg,
+            unselectedTextColor = MutedFg
+        ),
+        modifier = Modifier.testTag(testTag)
+    )
 }
