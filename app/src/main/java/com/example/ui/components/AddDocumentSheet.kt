@@ -189,7 +189,7 @@ fun AddDocumentSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xF7FFFFFF)
+        containerColor = com.example.ui.theme.Paper
     ) {
         Column(
             modifier = modifier
@@ -491,12 +491,12 @@ fun AddDocumentSheet(
                 },
                 enabled = canSave,
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = com.example.ui.theme.Brand,
-                    contentColor = Color.White,
-                    disabledContainerColor = Color(0x226C5CE7),
-                    disabledContentColor = Color(0x886C5CE7)
+                    containerColor = com.example.ui.theme.Ink,
+                    contentColor = com.example.ui.theme.OnInk,
+                    disabledContainerColor = com.example.ui.theme.SecondarySurface,
+                    disabledContentColor = com.example.ui.theme.SoftIcon
                 ),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -505,14 +505,14 @@ fun AddDocumentSheet(
                 Icon(
                     imageVector = Icons.Default.UploadFile,
                     contentDescription = null,
-                    tint = if (canSave) Color.White else Color(0x886C5CE7)
+                    tint = if (canSave) com.example.ui.theme.OnInk else com.example.ui.theme.SoftIcon
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Save to Phone Storage",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (canSave) Color.White else Color(0x886C5CE7)
+                    color = if (canSave) com.example.ui.theme.OnInk else com.example.ui.theme.SoftIcon
                 )
             }
 
