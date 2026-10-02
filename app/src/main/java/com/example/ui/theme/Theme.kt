@@ -3,46 +3,49 @@ package com.example.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-private val FreshLightScheme = lightColorScheme(
-    primary = Brand,
-    onPrimary = Color.White,
-    primaryContainer = BrandSoft,
-    onPrimaryContainer = Ink,
+private val DocVaultScheme = lightColorScheme(
+    primary = Ink,
+    onPrimary = OnInk,
+    primaryContainer = AccentTint,
+    onPrimaryContainer = AccentFg,
 
-    secondary = BrandPink,
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFE3EE),
+    secondary = Violet,
+    onSecondary = OnInk,
+    secondaryContainer = SecondarySurface,
     onSecondaryContainer = Ink,
 
-    tertiary = Mint,
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD5F7F0),
-    onTertiaryContainer = Ink,
+    tertiary = Violet,
+    onTertiary = OnInk,
 
-    background = BgLavender,
+    background = Paper,
     onBackground = Ink,
 
-    surface = Color.White,
+    surface = CardSurface,
     onSurface = Ink,
-    surfaceVariant = Color(0xFFF1EEFF),
-    onSurfaceVariant = InkSoft,
+    surfaceVariant = SecondarySurface,
+    onSurfaceVariant = MutedFg,
+    surfaceTint = CardSurface,
 
-    outline = Color(0xFFB9B4DB),
-    outlineVariant = Color(0x331E1B4B),
+    surfaceContainerLowest = CardSurface,
+    surfaceContainerLow = CardSurface,
+    surfaceContainer = CardSurface,
+    surfaceContainerHigh = CardSurface,
+    surfaceContainerHighest = SecondarySurface,
 
-    error = Coral
+    outline = SoftIcon,
+    outlineVariant = BorderColor,
+
+    error = ErrorRed,
+    onError = OnInk
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = false, // always light & fresh
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = FreshLightScheme,
+        colorScheme = DocVaultScheme,
         typography = Typography,
         content = content
     )
