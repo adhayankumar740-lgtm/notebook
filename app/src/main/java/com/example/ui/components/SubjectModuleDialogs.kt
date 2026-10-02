@@ -50,15 +50,14 @@ import com.example.data.model.Module
 import com.example.data.model.Subject
 
 val SUBJECT_PALETTE = listOf(
-    0xFF6C5CE7, // Violet
-    0xFFFF6FA5, // Pink
-    0xFFFF6B6B, // Coral
-    0xFFFF9F43, // Orange
-    0xFFFFB020, // Sun
-    0xFF14B8A6, // Teal
-    0xFF22C55E, // Green
-    0xFF38BDF8, // Sky
-    0xFF3B82F6  // Blue
+    0xFF8B5AE4, // Violet
+    0xFF2286EE, // Blue
+    0xFFE69400, // Amber
+    0xFFE1465B, // Coral
+    0xFF00917C, // Teal
+    0xFF5A6168, // Slate
+    0xFF652EAE, // Deep violet
+    0xFF151D23  // Ink
 )
 
 @Composable
