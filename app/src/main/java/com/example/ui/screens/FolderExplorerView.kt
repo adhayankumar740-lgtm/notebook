@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -701,6 +702,17 @@ private fun ModuleDocumentsView(
     onShare: (DocumentWithDetails) -> Unit,
     onDelete: (DocumentWithDetails) -> Unit
 ) {
+    var showSummary by remember { mutableStateOf(false) }
+
+    if (showSummary) {
+        SummaryDialog(
+            moduleName = module.name,
+            subjectName = subject.name,
+            documents = documents,
+            onDismiss = { showSummary = false }
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -753,6 +765,24 @@ private fun ModuleDocumentsView(
                             Icon(Icons.Default.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Add File")
+                        }
+                    }
+                    if (documents.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { showSummary = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = com.example.ui.theme.Violet,
+                                contentColor = com.example.ui.theme.OnInk
+                            ),
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("summarize_module_button")
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Summarize module · short notes", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
