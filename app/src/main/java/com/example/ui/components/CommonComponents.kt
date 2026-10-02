@@ -1,9 +1,6 @@
 package com.example.ui.components
 
-import com.example.ui.theme.Ink
-import com.example.ui.theme.Brand
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,10 +35,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.Platinum
-import com.example.ui.theme.PureBlack
-import com.example.ui.theme.PureWhite
-import com.example.ui.theme.Silver
+import com.example.ui.theme.AccentFg
+import com.example.ui.theme.AccentTint
+import com.example.ui.theme.BorderColor
+import com.example.ui.theme.DisplayFont
+import com.example.ui.theme.Ink
+import com.example.ui.theme.MutedFg
+import com.example.ui.theme.OnInk
+import com.example.ui.theme.SecondarySurface
+import com.example.ui.theme.Violet
+import com.example.ui.theme.toneOf
 
 @Composable
 fun FileTypeBadge(
@@ -64,9 +67,9 @@ fun SubjectBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color(colorHex).copy(alpha = 0.16f),
+        color = toneOf(colorHex).copy(alpha = 0.10f),
         shape = RoundedCornerShape(10.dp),
-        modifier = modifier.border(0.8.dp, Color(colorHex).copy(alpha = 0.40f), RoundedCornerShape(10.dp))
+        modifier = modifier
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -76,7 +79,7 @@ fun SubjectBadge(
                 modifier = Modifier
                     .size(7.dp)
                     .clip(CircleShape)
-                    .background(Color(colorHex))
+                    .background(toneOf(colorHex))
             )
             Spacer(modifier = Modifier.width(6.dp))
             val text = if (code.isNotBlank()) "$code • $name" else name
@@ -99,9 +102,9 @@ fun ModuleBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color(0x1F6C5CE7),
+        color = SecondarySurface,
         shape = RoundedCornerShape(10.dp),
-        modifier = modifier.border(0.8.dp, Color(0x446C5CE7), RoundedCornerShape(10.dp))
+        modifier = modifier
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -110,13 +113,13 @@ fun ModuleBadge(
             Icon(
                 imageVector = Icons.Default.Folder,
                 contentDescription = null,
-                tint = Silver,
+                tint = MutedFg,
                 modifier = Modifier.size(11.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Mod $moduleNumber: $name",
-                color = Silver,
+                color = MutedFg,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
@@ -142,14 +145,14 @@ fun LectureMetaChip(
             Icon(
                 imageVector = Icons.Default.CalendarToday,
                 contentDescription = null,
-                tint = Silver,
+                tint = MutedFg,
                 modifier = Modifier.size(11.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = dateString,
                 fontSize = 11.sp,
-                color = Silver,
+                color = MutedFg,
                 fontWeight = FontWeight.Normal
             )
         }
@@ -160,14 +163,14 @@ fun LectureMetaChip(
             Icon(
                 imageVector = Icons.Default.Schedule,
                 contentDescription = null,
-                tint = Silver,
+                tint = MutedFg,
                 modifier = Modifier.size(11.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = timeString,
                 fontSize = 11.sp,
-                color = Silver,
+                color = MutedFg,
                 fontWeight = FontWeight.Normal
             )
         }
@@ -191,25 +194,22 @@ fun EmptyStateView(
     ) {
         Surface(
             shape = CircleShape,
-            color = Color(0xCCFFFFFF),
-            modifier = Modifier
-                .size(84.dp)
-                .border(2.dp, Color(0x556C5CE7), CircleShape)
+            color = AccentTint,
+            modifier = Modifier.size(72.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Brand,
-                    modifier = Modifier.size(38.dp)
+                    tint = Violet,
+                    modifier = Modifier.size(32.dp)
                 )
             }
         }
         Spacer(modifier = Modifier.height(18.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
             color = Ink,
             textAlign = TextAlign.Center
         )
@@ -217,7 +217,7 @@ fun EmptyStateView(
         Text(
             text = description,
             style = MaterialTheme.typography.bodyMedium,
-            color = Silver,
+            color = MutedFg,
             textAlign = TextAlign.Center
         )
         if (actionButtonLabel != null && onActionClick != null) {
@@ -225,17 +225,49 @@ fun EmptyStateView(
             Button(
                 onClick = onActionClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Brand,
-                    contentColor = Color.White
+                    containerColor = Ink,
+                    contentColor = OnInk
                 ),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(50)
             ) {
                 Text(
                     text = actionButtonLabel,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.SemiBold,
+                    color = OnInk
                 )
             }
         }
+    }
+}
+
+/**
+ * Big serif page title with a small muted subtitle (the web design's h1 + count line).
+ */
+@Composable
+fun PageHeading(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    horizontalPadding: androidx.compose.ui.unit.Dp = 16.dp
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = horizontalPadding, vertical = 8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = DisplayFont,
+            color = Ink,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            fontSize = 12.sp,
+            color = MutedFg
+        )
     }
 }
