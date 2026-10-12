@@ -250,9 +250,9 @@ fun MainAppScreen(
             initialSubjectId = targetSubId,
             initialModuleId = targetModId,
             onDismiss = { viewModel.closeAddDocument() },
-            onSave = { uri, subId, modId, title, dateMillis, dateStr, timeStr, lecturer, topic, notes, tags ->
+            onSave = { uris, subId, modId, title, dateMillis, dateStr, timeStr, lecturer, topic, notes, tags ->
                 viewModel.importFileAndSave(
-                    uri, subId, modId, title, dateMillis, dateStr, timeStr, lecturer, topic, notes, tags
+                    uris, subId, modId, title, dateMillis, dateStr, timeStr, lecturer, topic, notes, tags
                 )
             }
         )
