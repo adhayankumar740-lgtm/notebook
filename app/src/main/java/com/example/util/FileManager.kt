@@ -77,7 +77,8 @@ object FileManager {
             documentsDir.mkdirs()
 
             val sanitizedName = displayName.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
-            val targetFileName = "${System.currentTimeMillis()}_$sanitizedName"
+            val uniqueId = java.util.UUID.randomUUID().toString().take(8)
+            val targetFileName = "${System.currentTimeMillis()}_${uniqueId}_$sanitizedName"
             val targetFile = File(documentsDir, targetFileName)
 
             // Copy stream into internal storage
@@ -98,7 +99,7 @@ object FileManager {
                 pageCount = PdfHelper.getPageCount(targetFile).coerceAtLeast(1)
                 val thumbsDir = File(context.filesDir, "thumbnails")
                 thumbsDir.mkdirs()
-                val thumbFile = File(thumbsDir, "thumb_${System.currentTimeMillis()}.jpg")
+                val thumbFile = File(thumbsDir, "thumb_${System.currentTimeMillis()}_${uniqueId}.jpg")
                 if (PdfHelper.renderThumbnail(targetFile, thumbFile)) {
                     thumbnailRelativePath = "thumbnails/${thumbFile.name}"
                 }
