@@ -76,6 +76,101 @@ object PdfHelper {
     }
 
     /**
+     * Flattens the handwriting/text annotations into a NEW pdf file (the original is untouched).
+     * Every page is rendered, annotations are drawn on top, and the result is written as a PDF.
+     */
+    fun exportAnnotatedPdf(source: File, annotations: List<PageAnnotation>, outFile: File): Boolean {
+        var pfd: ParcelFileDescriptor? = null
+        var renderer: PdfRenderer? = null
+        val document = PdfDocument()
+        return try {
+            pfd = ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY)
+            renderer = PdfRenderer(pfd)
+            val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+            for (i in 0 until renderer.pageCount) {
+                val page = renderer.openPage(i)
+                val pw = page.width
+                val ph = page.height
+                val scale = (2000f / maxOf(pw, ph)).coerceAtLeast(1.0f)
+                val bw = (pw * scale).toInt()
+                val bh = (ph * scale).toInt()
+                val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+                val bmpCanvas = android.graphics.Canvas(bitmap)
+                bmpCanvas.drawColor(Color.WHITE)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+                page.close()
+
+                AnnotationStore.draw(bmpCanvas, bw.toFloat(), bh.toFloat(), annotations.filter { it.page == i })
+
+                val info = PdfDocument.PageInfo.Builder(pw, ph, i + 1).create()
+                val outPage = document.startPage(info)
+                outPage.canvas.drawBitmap(bitmap, null, android.graphics.RectF(0f, 0f, pw.toFloat(), ph.toFloat()), paint)
+                document.finishPage(outPage)
+                bitmap.recycle()
+            }
+            outFile.parentFile?.mkdirs()
+            FileOutputStream(outFile).use { document.writeTo(it) }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error exporting annotated PDF", e)
+            false
+        } finally {
+            try {
+                document.close()
+                renderer?.close()
+                pfd?.close()
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Draws annotations on a copy of a photo and saves it as JPEG (original is untouched).
+     */
+    fun exportAnnotatedImage(source: File, annotations: List<PageAnnotation>, outFile: File): Boolean {
+        return try {
+            val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = 1 }
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(source.absolutePath, bounds)
+            while (bounds.outWidth / opts.inSampleSize > 4096 || bounds.outHeight / opts.inSampleSize > 4096) {
+                opts.inSampleSize *= 2
+            }
+            var bmp = android.graphics.BitmapFactory.decodeFile(source.absolutePath, opts) ?: return false
+
+            // Respect EXIF rotation so annotations line up with what the viewer shows
+            val degrees = try {
+                when (android.media.ExifInterface(source.absolutePath).getAttributeInt(
+                    android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL
+                )) {
+                    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                    else -> 0f
+                }
+            } catch (_: Exception) { 0f }
+            if (degrees != 0f) {
+                val m = Matrix().apply { postRotate(degrees) }
+                val rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, m, true)
+                bmp.recycle()
+                bmp = rotated
+            }
+
+            val result = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(result)
+            canvas.drawColor(Color.WHITE)
+            canvas.drawBitmap(bmp, 0f, 0f, null)
+            AnnotationStore.draw(canvas, result.width.toFloat(), result.height.toFloat(), annotations.filter { it.page == 0 })
+            outFile.parentFile?.mkdirs()
+            FileOutputStream(outFile).use { result.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+            bmp.recycle()
+            result.recycle()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error exporting annotated image", e)
+            false
+        }
+    }
+
+    /**
      * Renders the first page to a compressed JPEG thumbnail file for fast loading.
      */
     fun renderThumbnail(pdfFile: File, outputFile: File): Boolean {
