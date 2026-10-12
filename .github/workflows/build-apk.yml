@@ -29,15 +29,13 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
-      # app/build.gradle.kts debug.keystore maangta hai (.gitignore me hai), isliye CI me bana lete hain
-      - name: Create debug keystore
+      # Repo me maujood fixed debug.keystore use hota hai (make-keystore.yml ek baar bana deta hai)
+      - name: Check keystore
         run: |
-          keytool -genkeypair -v \
-            -keystore debug.keystore \
-            -storepass android -keypass android \
-            -alias androiddebugkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          if [ ! -f debug.keystore ]; then
+            echo "debug.keystore repo me nahi mila. Pehle 'Make keystore (one time)' workflow chalao."
+            exit 1
+          fi
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --no-configuration-cache --stacktrace
