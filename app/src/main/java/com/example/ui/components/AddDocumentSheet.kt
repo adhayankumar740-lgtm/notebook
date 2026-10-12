@@ -49,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,7 +77,7 @@ fun AddDocumentSheet(
     initialModuleId: Long?,
     onDismiss: () -> Unit,
     onSave: (
-        uri: Uri,
+        uris: List<Uri>,
         subjectId: Long,
         moduleId: Long,
         title: String,
@@ -95,9 +94,8 @@ fun AddDocumentSheet(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var detectedFileName by remember { mutableStateOf("") }
-    var detectedFileSize by remember { mutableLongStateOf(0L) }
+    // Multiple files (PDFs + photos) can be selected together
+    var selectedFiles by remember { mutableStateOf<List<PickedFile>>(emptyList()) }
 
     var selectedSubjectId by remember {
         mutableStateOf(
@@ -137,50 +135,43 @@ fun AddDocumentSheet(
     var subjectDropdownExpanded by remember { mutableStateOf(false) }
     var moduleDropdownExpanded by remember { mutableStateOf(false) }
 
-    // File picker launcher for PDFs or all documents
-    val docPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            selectedUri = uri
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (cursor.moveToFirst()) {
-                    if (nameIndex != -1) {
-                        val name = cursor.getString(nameIndex) ?: ""
-                        detectedFileName = name
-                        if (title.isBlank()) title = name.substringBeforeLast(".")
-                    }
-                    if (sizeIndex != -1) {
-                        detectedFileSize = cursor.getLong(sizeIndex)
+    fun addPicked(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        val added = uris
+            .filter { u -> selectedFiles.none { it.uri == u } }
+            .map { u ->
+                var name = ""
+                var size = 0L
+                context.contentResolver.query(u, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (cursor.moveToFirst()) {
+                        if (nameIndex != -1) name = cursor.getString(nameIndex) ?: ""
+                        if (sizeIndex != -1) size = cursor.getLong(sizeIndex)
                     }
                 }
+                PickedFile(u, name.ifBlank { "File" }, size)
             }
+        val merged = selectedFiles + added
+        selectedFiles = merged
+        // Auto-fill title only when a single file is selected
+        if (merged.size == 1 && title.isBlank()) {
+            title = merged.first().name.substringBeforeLast(".")
         }
     }
 
-    // Photo picker launcher
+    // File picker launcher: multiple PDFs (and images) at once
+    val docPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        addPicked(uris)
+    }
+
+    // Photo picker launcher: multiple photos at once
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            selectedUri = uri
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (cursor.moveToFirst()) {
-                    if (nameIndex != -1) {
-                        val name = cursor.getString(nameIndex) ?: ""
-                        detectedFileName = name
-                        if (title.isBlank()) title = name.substringBeforeLast(".")
-                    }
-                    if (sizeIndex != -1) {
-                        detectedFileSize = cursor.getLong(sizeIndex)
-                    }
-                }
-            }
-        }
+        contract = ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris: List<Uri> ->
+        addPicked(uris)
     }
 
     val selectedSubject = allSubjects.find { it.id == selectedSubjectId }
@@ -218,32 +209,47 @@ fun AddDocumentSheet(
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (selectedUri != null) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    containerColor = if (selectedFiles.isNotEmpty()) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     else MaterialTheme.colorScheme.surfaceVariant
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    if (selectedUri != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = detectedFileName.ifBlank { "Selected File" },
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                    if (selectedFiles.isNotEmpty()) {
+                        Text(
+                            text = "${selectedFiles.size} file(s) selected",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        for (f in selectedFiles) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Text(
-                                    text = "Size: ${FileManager.formatFileSize(detectedFileSize)}",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = f.name,
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = FileManager.formatFileSize(f.size),
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { selectedFiles = selectedFiles.filter { it.uri != f.uri } },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(18.dp))
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.height(10.dp))
@@ -254,14 +260,14 @@ fun AddDocumentSheet(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         FilledTonalButton(
-                            onClick = { docPickerLauncher.launch(arrayOf("application/pdf", "*/*")) },
+                            onClick = { docPickerLauncher.launch(arrayOf("application/pdf", "image/*")) },
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("pick_pdf_button")
                         ) {
                             Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pick PDF")
+                            Text("Pick PDFs")
                         }
 
                         FilledTonalButton(
@@ -276,7 +282,7 @@ fun AddDocumentSheet(
                         ) {
                             Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pick Photo")
+                            Text("Pick Photos")
                         }
                     }
                 }
@@ -371,8 +377,8 @@ fun AddDocumentSheet(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Document Title") },
-                placeholder = { Text("e.g. Lecture 4 - Binary Trees") },
+                label = { Text(if (selectedFiles.size > 1) "Title prefix (optional)" else "Document Title") },
+                placeholder = { Text(if (selectedFiles.size > 1) "Blank = each file's own name" else "e.g. Lecture 4 - Binary Trees") },
                 leadingIcon = { Icon(Icons.Default.Title, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier
@@ -468,15 +474,15 @@ fun AddDocumentSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            val canSave = selectedUri != null && selectedSubjectId != null && selectedModuleId != null
+            val canSave = selectedFiles.isNotEmpty() && selectedSubjectId != null && selectedModuleId != null
 
             Button(
                 onClick = {
-                    val uri = selectedUri ?: return@Button
+                    if (selectedFiles.isEmpty()) return@Button
                     val subId = selectedSubjectId ?: return@Button
                     val modId = selectedModuleId ?: return@Button
                     onSave(
-                        uri,
+                        selectedFiles.map { it.uri },
                         subId,
                         modId,
                         title,
@@ -509,7 +515,7 @@ fun AddDocumentSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Save to Phone Storage",
+                    text = if (selectedFiles.size > 1) "Save ${selectedFiles.size} files to Phone Storage" else "Save to Phone Storage",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (canSave) com.example.ui.theme.OnInk else com.example.ui.theme.SoftIcon
@@ -520,3 +526,5 @@ fun AddDocumentSheet(
         }
     }
 }
+
+private data class PickedFile(val uri: Uri, val name: String, val size: Long)
