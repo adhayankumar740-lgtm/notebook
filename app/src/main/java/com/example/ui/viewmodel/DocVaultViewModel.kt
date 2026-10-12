@@ -11,6 +11,8 @@ import com.example.data.model.Module
 import com.example.data.model.Subject
 import com.example.data.repository.DocumentRepository
 import com.example.util.FileManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -585,7 +587,7 @@ class DocVaultViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun importFileAndSave(
-        uri: Uri,
+        uris: List<Uri>,
         subjectId: Long,
         moduleId: Long,
         title: String,
@@ -598,13 +600,8 @@ class DocVaultViewModel(application: Application) : AndroidViewModel(application
         tags: String
     ) {
         viewModelScope.launch {
-            val imported = FileManager.importFileFromUri(context, uri, subjectId, moduleId)
-            if (imported == null) {
-                showMessage("Failed to import file. Please check file access.")
-                return@launch
-            }
-
-            val finalTitle = if (title.isNotBlank()) title.trim() else imported.originalFileName
+            var savedCount = 0
+            var failedCount = 0
             val dateStr = if (lectureDateString.isNotBlank()) {
                 lectureDateString
             } else if (lectureDateMillis != null) {
@@ -613,29 +610,52 @@ class DocVaultViewModel(application: Application) : AndroidViewModel(application
                 SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date())
             }
 
-            val newDoc = DocumentFile(
-                subjectId = subjectId,
-                moduleId = moduleId,
-                title = finalTitle,
-                originalFileName = imported.originalFileName,
-                internalFilePath = imported.relativeInternalPath,
-                fileType = imported.fileType,
-                mimeType = imported.mimeType,
-                fileSizeBytes = imported.fileSizeBytes,
-                pageCount = imported.pageCount,
-                thumbnailPath = imported.thumbnailPath,
-                lectureDateMillis = lectureDateMillis ?: System.currentTimeMillis(),
-                lectureDateString = dateStr,
-                lectureTimeString = lectureTimeString.trim(),
-                lecturerName = lecturerName.trim(),
-                topic = topic.trim(),
-                notes = notes.trim(),
-                tags = tags.trim()
-            )
+            uris.forEachIndexed { index, uri ->
+                val imported = withContext(Dispatchers.IO) {
+                    FileManager.importFileFromUri(context, uri, subjectId, moduleId)
+                }
+                if (imported == null) {
+                    failedCount++
+                    return@forEachIndexed
+                }
 
-            repository.insertDocument(newDoc)
-            showMessage("File saved in phone storage ($finalTitle)")
-            closeAddDocument()
+                val baseName = imported.originalFileName.substringBeforeLast(".")
+                val finalTitle = when {
+                    title.isBlank() -> baseName
+                    uris.size == 1 -> title.trim()
+                    else -> "${title.trim()} ${index + 1}"
+                }
+
+                val newDoc = DocumentFile(
+                    subjectId = subjectId,
+                    moduleId = moduleId,
+                    title = finalTitle,
+                    originalFileName = imported.originalFileName,
+                    internalFilePath = imported.relativeInternalPath,
+                    fileType = imported.fileType,
+                    mimeType = imported.mimeType,
+                    fileSizeBytes = imported.fileSizeBytes,
+                    pageCount = imported.pageCount,
+                    thumbnailPath = imported.thumbnailPath,
+                    lectureDateMillis = lectureDateMillis ?: System.currentTimeMillis(),
+                    lectureDateString = dateStr,
+                    lectureTimeString = lectureTimeString.trim(),
+                    lecturerName = lecturerName.trim(),
+                    topic = topic.trim(),
+                    notes = notes.trim(),
+                    tags = tags.trim()
+                )
+                repository.insertDocument(newDoc)
+                savedCount++
+            }
+
+            when {
+                savedCount == 0 -> showMessage("Failed to import file. Please check file access.")
+                failedCount > 0 -> showMessage("$savedCount file(s) saved, $failedCount failed")
+                savedCount == 1 -> showMessage("File saved in phone storage")
+                else -> showMessage("$savedCount files saved in phone storage")
+            }
+            if (savedCount > 0) closeAddDocument()
         }
     }
 
