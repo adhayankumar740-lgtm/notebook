@@ -3,6 +3,17 @@ package com.example.ui.screens
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.example.ui.components.AnnotTool
+import com.example.ui.components.AnnotationLayer
+import com.example.util.AnnotationStore
+import com.example.util.PageAnnotation
+import com.example.util.TextAnnotation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.runtime.mutableFloatStateOf
@@ -120,6 +131,53 @@ fun DocumentViewerScreen(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val isPdf = doc.fileType.equals("PDF", ignoreCase = true)
+    val isImage = doc.fileType.equals("IMAGE", ignoreCase = true)
+    val scope = rememberCoroutineScope()
+
+    // ---- Writing / drawing on top of the PDF or photo ----
+    var annotations by remember(doc.internalFilePath) { mutableStateOf<List<PageAnnotation>>(emptyList()) }
+    var isAnnotating by remember { mutableStateOf(false) }
+    var annotTool by remember { mutableStateOf(AnnotTool.PEN) }
+    var penColor by remember { mutableIntStateOf(0xFF111111.toInt()) }
+    var pendingTextPos by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    var pendingText by remember { mutableStateOf("") }
+    var isExporting by remember { mutableStateOf(false) }
+    val activePage = if (isPdf) currentPageIndex else 0
+
+    LaunchedEffect(doc.internalFilePath) {
+        annotations = withContext(Dispatchers.IO) { AnnotationStore.load(context, doc.internalFilePath) }
+    }
+
+    fun commitAnnotations(newList: List<PageAnnotation>) {
+        annotations = newList
+        val path = doc.internalFilePath
+        scope.launch(Dispatchers.IO) { AnnotationStore.save(context, path, newList) }
+    }
+
+    fun shareDoc() {
+        if (annotations.isEmpty() || !(isPdf || isImage)) {
+            FileManager.shareDocument(context, doc)
+            return
+        }
+        scope.launch {
+            isExporting = true
+            val safe = doc.title.replace(Regex("[^a-zA-Z0-9._-]"), "_").ifBlank { "document" }
+            val out = File(context.cacheDir, "shared/${safe}_annotated.${if (isPdf) "pdf" else "jpg"}")
+            val ok = withContext(Dispatchers.IO) {
+                if (isPdf) PdfHelper.exportAnnotatedPdf(file, annotations, out)
+                else PdfHelper.exportAnnotatedImage(file, annotations, out)
+            }
+            isExporting = false
+            if (ok) {
+                FileManager.shareFile(context, out, if (isPdf) "application/pdf" else "image/jpeg", doc.title)
+            } else {
+                FileManager.shareDocument(context, doc)
+            }
+        }
+    }
+
+    // Back button leaves writing mode first (declared after the BackHandler above, so it wins)
+    BackHandler(enabled = isAnnotating) { isAnnotating = false }
 
     // Render PDF page when page index changes
     LaunchedEffect(file, currentPageIndex, isPdf) {
@@ -167,7 +225,7 @@ fun DocumentViewerScreen(
                             tint = if (doc.isStarred) AccentAmber else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { FileManager.shareDocument(context, doc) }) {
+                    IconButton(onClick = { shareDoc() }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                     IconButton(onClick = onEditDetails) {
@@ -212,15 +270,35 @@ fun DocumentViewerScreen(
                             if (isLoadingPage) {
                                 CircularProgressIndicator(color = Color.White)
                             } else if (currentPdfBitmap != null) {
+                                val pageBmp = currentPdfBitmap!!
                                 ZoomableBox(resetKey = currentPageIndex) {
-                                    Image(
-                                        bitmap = currentPdfBitmap!!.asImageBitmap(),
-                                        contentDescription = "PDF Page ${currentPageIndex + 1}",
-                                        contentScale = ContentScale.Fit,
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(8.dp)
-                                    )
+                                            .padding(8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(modifier = Modifier.aspectRatio(pageBmp.width.toFloat() / pageBmp.height.toFloat())) {
+                                            Image(
+                                                bitmap = pageBmp.asImageBitmap(),
+                                                contentDescription = "PDF Page ${currentPageIndex + 1}",
+                                                contentScale = ContentScale.FillBounds,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                            AnnotationLayer(
+                                                pageIndex = currentPageIndex,
+                                                annotations = annotations,
+                                                editing = isAnnotating,
+                                                tool = annotTool,
+                                                penColor = penColor,
+                                                penWidthFraction = 0.004f,
+                                                onAdd = { commitAnnotations(annotations + it) },
+                                                onRemove = { commitAnnotations(annotations - it) },
+                                                onRequestText = { x, y -> pendingTextPos = x to y; pendingText = "" },
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    }
                                 }
                             } else {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -237,18 +315,38 @@ fun DocumentViewerScreen(
                             }
                         }
                         doc.fileType.equals("IMAGE", ignoreCase = true) -> {
+                            val imageRatio = remember(file) { readImageRatio(file) }
                             ZoomableBox(resetKey = doc.id) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(file)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = "Photo: ${doc.title}",
-                                    contentScale = ContentScale.Fit,
+                                Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(8.dp)
-                                )
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(modifier = Modifier.aspectRatio(imageRatio)) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(context)
+                                                .data(file)
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = "Photo: ${doc.title}",
+                                            contentScale = ContentScale.FillBounds,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                        AnnotationLayer(
+                                            pageIndex = 0,
+                                            annotations = annotations,
+                                            editing = isAnnotating,
+                                            tool = annotTool,
+                                            penColor = penColor,
+                                            penWidthFraction = 0.004f,
+                                            onAdd = { commitAnnotations(annotations + it) },
+                                            onRemove = { commitAnnotations(annotations - it) },
+                                            onRequestText = { x, y -> pendingTextPos = x to y; pendingText = "" },
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
                             }
                         }
                         else -> {
@@ -260,6 +358,72 @@ fun DocumentViewerScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(onClick = { FileManager.openFileWithExternalApp(context, doc) }) {
                                     Text("Open File")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Writing toolbar (pen / text / eraser)
+                if (isAnnotating) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                FilterChip(
+                                    selected = annotTool == AnnotTool.PEN,
+                                    onClick = { annotTool = AnnotTool.PEN },
+                                    label = { Text("Pen") }
+                                )
+                                FilterChip(
+                                    selected = annotTool == AnnotTool.TEXT,
+                                    onClick = { annotTool = AnnotTool.TEXT },
+                                    label = { Text("Text") }
+                                )
+                                FilterChip(
+                                    selected = annotTool == AnnotTool.ERASER,
+                                    onClick = { annotTool = AnnotTool.ERASER },
+                                    label = { Text("Eraser") }
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                TextButton(
+                                    onClick = {
+                                        val idx = annotations.indexOfLast { it.page == activePage }
+                                        if (idx >= 0) commitAnnotations(annotations.toMutableList().also { it.removeAt(idx) })
+                                    },
+                                    enabled = annotations.any { it.page == activePage }
+                                ) { Text("Undo") }
+                                TextButton(onClick = { isAnnotating = false }) { Text("Done") }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Color", style = MaterialTheme.typography.labelMedium)
+                                val palette = listOf(
+                                    0xFF111111.toInt(), 0xFFD32F2F.toInt(), 0xFF1565C0.toInt(),
+                                    0xFF2E7D32.toInt(), 0xFFF9A825.toInt()
+                                )
+                                for (c in palette) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(c))
+                                            .border(
+                                                width = if (penColor == c) 3.dp else 1.dp,
+                                                color = if (penColor == c) MaterialTheme.colorScheme.primary else Color.Gray,
+                                                shape = CircleShape
+                                            )
+                                            .clickable { penColor = c }
+                                    )
                                 }
                             }
                         }
@@ -307,12 +471,21 @@ fun DocumentViewerScreen(
                             )
                         }
 
-                        FilledTonalButton(
-                            onClick = { FileManager.openFileWithExternalApp(context, doc) }
-                        ) {
-                            Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Open in App", fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if ((isPdf || isImage) && !isAnnotating) {
+                                FilledTonalButton(onClick = { isAnnotating = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Write", fontSize = 12.sp)
+                                }
+                            }
+                            FilledTonalButton(
+                                onClick = { FileManager.openFileWithExternalApp(context, doc) }
+                            ) {
+                                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Open", fontSize = 12.sp)
+                            }
                         }
                     }
                 }
@@ -465,6 +638,54 @@ fun DocumentViewerScreen(
         }
     }
 
+    pendingTextPos?.let { pos ->
+        AlertDialog(
+            onDismissRequest = { pendingTextPos = null },
+            title = { Text("Add text") },
+            text = {
+                OutlinedTextField(
+                    value = pendingText,
+                    onValueChange = { pendingText = it },
+                    placeholder = { Text("Type here...") },
+                    minLines = 2,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (pendingText.isNotBlank()) {
+                            commitAnnotations(
+                                annotations + TextAnnotation(
+                                    page = activePage,
+                                    color = penColor,
+                                    sizeFraction = 0.035f,
+                                    x = pos.first,
+                                    y = pos.second,
+                                    text = pendingText.trim()
+                                )
+                            )
+                        }
+                        pendingTextPos = null
+                    }
+                ) { Text("Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingTextPos = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (isExporting) {
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {},
+            title = { Text("Preparing file...") },
+            text = { CircularProgressIndicator() }
+        )
+    }
+
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
@@ -571,5 +792,28 @@ private fun ZoomableBox(
         ) {
             content()
         }
+    }
+}
+
+
+/** Width/height of a photo as the viewer shows it (EXIF rotation applied). */
+private fun readImageRatio(file: File): Float {
+    return try {
+        val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeFile(file.absolutePath, o)
+        var w = o.outWidth
+        var h = o.outHeight
+        if (w <= 0 || h <= 0) return 4f / 3f
+        val orientation = android.media.ExifInterface(file.absolutePath).getAttributeInt(
+            android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL
+        )
+        if (orientation == android.media.ExifInterface.ORIENTATION_ROTATE_90 ||
+            orientation == android.media.ExifInterface.ORIENTATION_ROTATE_270
+        ) {
+            val t = w; w = h; h = t
+        }
+        w.toFloat() / h.toFloat()
+    } catch (_: Exception) {
+        4f / 3f
     }
 }
