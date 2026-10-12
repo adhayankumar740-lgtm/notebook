@@ -128,6 +128,7 @@ object FileManager {
         try {
             val file = File(context.filesDir, relativePath)
             if (file.exists()) file.delete()
+            AnnotationStore.delete(context, relativePath)
 
             if (!thumbnailPath.isNullOrBlank() && thumbnailPath != relativePath) {
                 val thumb = File(context.filesDir, thumbnailPath)
@@ -190,6 +191,28 @@ object FileManager {
             context.startActivity(chooser)
         } catch (e: Exception) {
             Log.e(TAG, "Could not share document", e)
+        }
+    }
+
+    /**
+     * Shares an arbitrary file (e.g. an annotated copy in the cache folder) via the share sheet.
+     */
+    fun shareFile(context: Context, file: File, mimeType: String, title: String) {
+        try {
+            if (!file.exists()) return
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, title)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(intent, "Share Document").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not share file", e)
         }
     }
 
